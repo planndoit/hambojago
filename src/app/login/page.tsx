@@ -1,10 +1,12 @@
+import { AppTopBar } from "@/components/app-top-bar";
 import { AuthForm } from "@/components/auth-form";
 import { MobileShell } from "@/components/mobile-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
   return (
-    <MobileShell className="grid content-center">
+    <MobileShell className="grid content-start gap-4">
+      <AppTopBar title="계정" />
       <Card>
         <CardHeader>
           <p className="text-sm font-black text-orange-600">생성자 로그인</p>

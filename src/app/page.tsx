@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { BarChart3, CalendarDays, LogOut, Plus, Share2 } from "lucide-react";
+import { BarChart3, CalendarDays, Plus, Share2 } from "lucide-react";
 
-import { signOutAction } from "@/app/actions";
+import { AppTopBar } from "@/components/app-top-bar";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,17 +22,7 @@ export default async function HomePage() {
 
   return (
     <MobileShell className="grid content-start gap-4">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-black text-orange-600">함보자고</p>
-          <h1 className="text-3xl font-black tracking-[-0.05em] text-stone-950">내 약속</h1>
-        </div>
-        <form action={signOutAction}>
-          <Button size="icon" type="submit" variant="ghost" aria-label="로그아웃">
-            <LogOut className="size-5" />
-          </Button>
-        </form>
-      </header>
+      <AppTopBar title="내 약속" />
 
       <Button asChild size="lg" className="w-full">
         <Link href="/events/new">
