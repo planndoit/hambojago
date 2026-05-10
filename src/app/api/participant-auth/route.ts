@@ -1,0 +1,75 @@
+import { NextResponse } from "next/server";
+
+import { isValidPassword, isValidUsername } from "@/lib/auth";
+import { createParticipantAccountSession } from "@/lib/participant-auth";
+import { hashPassword, verifyPassword } from "@/lib/security";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+
+type AuthRequest = {
+  mode?: unknown;
+  username?: unknown;
+  password?: unknown;
+};
+
+export async function POST(request: Request) {
+  const body = (await request.json()) as AuthRequest;
+  const mode = body.mode === "signup" ? "signup" : "login";
+  const username = typeof body.username === "string" ? body.username.trim() : "";
+  const password = typeof body.password === "string" ? body.password : "";
+
+  if (!isValidUsername(username)) {
+    return NextResponse.json(
+      { message: "아이디는 영문, 숫자, 밑줄로 3~20자만 사용할 수 있습니다." },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidPassword(password)) {
+    return NextResponse.json(
+      { message: "비밀번호는 8자 이상이어야 합니다." },
+      { status: 400 }
+    );
+  }
+
+  const supabase = createSupabaseAdminClient();
+
+  if (mode === "signup") {
+    const { data: account, error } = await supabase
+      .from("participant_accounts")
+      .insert({
+        username,
+        password_hash: hashPassword(password)
+      })
+      .select("id")
+      .single();
+
+    if (error || !account) {
+      return NextResponse.json(
+        {
+          message:
+            error?.code === "23505" ? "이미 사용 중인 아이디입니다." : "가입하지 못했습니다."
+        },
+        { status: 400 }
+      );
+    }
+
+    await createParticipantAccountSession(account.id);
+    return NextResponse.json({ ok: true });
+  }
+
+  const { data: account, error } = await supabase
+    .from("participant_accounts")
+    .select("id, password_hash")
+    .eq("username", username)
+    .single();
+
+  if (error || !account || !verifyPassword(password, account.password_hash)) {
+    return NextResponse.json(
+      { message: "아이디 또는 비밀번호가 올바르지 않습니다." },
+      { status: 401 }
+    );
+  }
+
+  await createParticipantAccountSession(account.id);
+  return NextResponse.json({ ok: true });
+}

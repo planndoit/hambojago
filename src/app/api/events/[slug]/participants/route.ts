@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createEditToken, hashSecret, isValidPin } from "@/lib/security";
+import { getCurrentParticipantAccount } from "@/lib/participant-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type ParticipantRequest = {
@@ -21,6 +22,12 @@ function parseRequestBody(body: ParticipantRequest) {
   return { name, pin, dates, editToken };
 }
 
+type ParticipantLookupRow = {
+  id: string;
+  pin_hash: string;
+  participant_account_id: string | null;
+};
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ slug: string }> }
@@ -35,6 +42,9 @@ export async function POST(
       { status: 400 }
     );
   }
+
+  const linkedAccount = await getCurrentParticipantAccount();
+  const linkedAccountId = linkedAccount?.id ?? null;
 
   const supabase = createSupabaseAdminClient();
   const { data: event, error: eventError } = await supabase
@@ -68,23 +78,56 @@ export async function POST(
 
   const pinHash = hashSecret(pin);
   const editTokenHash = editToken ? hashSecret(editToken) : "";
-  const participantQuery = supabase
-    .from("participants")
-    .select("id, pin_hash")
-    .eq("event_id", event.id)
-    .limit(1);
 
-  const { data: existingParticipants, error: participantLookupError } = editTokenHash
-    ? await participantQuery.eq("edit_token_hash", editTokenHash)
-    : await participantQuery.eq("name", name).eq("pin_hash", pinHash);
+  let existingParticipant: ParticipantLookupRow | null = null;
 
-  if (participantLookupError) {
-    return NextResponse.json({ message: participantLookupError.message }, { status: 500 });
+  if (editTokenHash) {
+    const { data: rows, error } = await supabase
+      .from("participants")
+      .select("id, pin_hash, participant_account_id")
+      .eq("event_id", event.id)
+      .eq("edit_token_hash", editTokenHash)
+      .limit(1);
+
+    if (error) {
+      return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    existingParticipant = rows?.at(0) ?? null;
   }
 
-  const existingParticipant = existingParticipants.at(0);
+  if (!existingParticipant && linkedAccountId) {
+    const { data: row, error } = await supabase
+      .from("participants")
+      .select("id, pin_hash, participant_account_id")
+      .eq("event_id", event.id)
+      .eq("participant_account_id", linkedAccountId)
+      .maybeSingle();
 
-  if (editTokenHash && existingParticipant && existingParticipant.pin_hash !== pinHash) {
+    if (error) {
+      return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    existingParticipant = row ?? null;
+  }
+
+  if (!existingParticipant) {
+    const { data: rows, error } = await supabase
+      .from("participants")
+      .select("id, pin_hash, participant_account_id")
+      .eq("event_id", event.id)
+      .eq("name", name)
+      .eq("pin_hash", pinHash)
+      .limit(1);
+
+    if (error) {
+      return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    existingParticipant = rows?.at(0) ?? null;
+  }
+
+  if (existingParticipant && existingParticipant.pin_hash !== pinHash) {
     return NextResponse.json(
       { message: "처음 입력한 4자리 PIN이 일치해야 수정할 수 있습니다." },
       { status: 403 }
@@ -96,14 +139,19 @@ export async function POST(
 
   const participantId = existingParticipant?.id;
 
+  const updatePayload = {
+    name,
+    edit_token_hash: nextEditTokenHash,
+    updated_at: new Date().toISOString(),
+    ...(linkedAccountId && !existingParticipant?.participant_account_id
+      ? { participant_account_id: linkedAccountId }
+      : {})
+  };
+
   if (participantId) {
     const { error: updateError } = await supabase
       .from("participants")
-      .update({
-        name,
-        edit_token_hash: nextEditTokenHash,
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq("id", participantId);
 
     if (updateError) {
@@ -119,15 +167,21 @@ export async function POST(
           event_id: event.id,
           name,
           pin_hash: pinHash,
-          edit_token_hash: nextEditTokenHash
+          edit_token_hash: nextEditTokenHash,
+          participant_account_id: linkedAccountId ?? null
         })
         .select("id")
         .single();
 
   if (participantError || !participant) {
     return NextResponse.json(
-      { message: participantError?.message ?? "참여자를 저장하지 못했습니다." },
-      { status: 500 }
+      {
+        message:
+          participantError?.code === "23505"
+            ? "이 참여자 계정으로는 이미 이 약속에 참여했습니다."
+            : participantError?.message ?? "참여자를 저장하지 못했습니다."
+      },
+      { status: participantError?.code === "23505" ? 409 : 500 }
     );
   }
 

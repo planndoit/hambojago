@@ -27,7 +27,13 @@ export async function AppTopBar({ title }: AppTopBarProps) {
             <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-full text-stone-700 transition hover:bg-orange-50 [&::-webkit-details-marker]:hidden">
               <Menu className="size-5" />
             </summary>
-            <div className="absolute right-0 top-12 w-40 rounded-3xl border border-orange-100 bg-white p-2 shadow-xl shadow-stone-950/10">
+            <div className="absolute right-0 top-12 w-44 rounded-3xl border border-orange-100 bg-white p-2 shadow-xl shadow-stone-950/10">
+              <Link
+                className="flex h-11 w-full items-center gap-2 rounded-2xl px-3 text-sm font-bold text-stone-700 transition hover:bg-orange-50"
+                href="/settings/profile"
+              >
+                회원정보 수정
+              </Link>
               <form action={signOutAction}>
                 <button
                   className="flex h-11 w-full items-center gap-2 rounded-2xl px-3 text-left text-sm font-bold text-stone-700 transition hover:bg-orange-50"

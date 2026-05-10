@@ -5,7 +5,8 @@ import type {
   CreatorEventSummary,
   EventParticipantSummary,
   EventResult,
-  EventWithDates
+  EventWithDates,
+  ResultParticipantDisplay
 } from "@/lib/types";
 
 export async function getEventWithDates(slug: string): Promise<EventWithDates> {
@@ -38,29 +39,57 @@ export async function getEventResults(slug: string) {
   }
 
   const participantIds = [...new Set(availability.map((row) => row.participant_id))];
-  const { data: participants, error: participantsError } =
+  const { data: participantRows, error: participantsError } =
     participantIds.length > 0
-      ? await supabase.from("participants").select("id, name").in("id", participantIds)
+      ? await supabase
+          .from("participants")
+          .select("id, name, participant_accounts(avatar_url)")
+          .in("id", participantIds)
       : { data: [], error: null };
 
   if (participantsError) {
     throw new Error(participantsError.message);
   }
 
-  const participantNameMap = new Map(
-    participants.map((participant) => [participant.id, participant.name])
+  type ParticipantJoinRow = {
+    id: string;
+    name: string;
+    participant_accounts: { avatar_url: string | null } | null;
+  };
+
+  const participantDisplayMap = new Map<string, ResultParticipantDisplay>(
+    (participantRows as ParticipantJoinRow[]).map((participant) => [
+      participant.id,
+      {
+        id: participant.id,
+        name: participant.name,
+        avatarUrl: participant.participant_accounts?.avatar_url ?? null
+      }
+    ])
   );
 
   const results = event.event_dates.map<EventResult>((eventDate) => {
     const rows = availability.filter((row) => row.date === eventDate.date);
-    const participants = rows
-      .map((row) => participantNameMap.get(row.participant_id))
-      .filter((name): name is string => Boolean(name));
+    const seen = new Set<string>();
+    const participantsList: ResultParticipantDisplay[] = [];
+
+    for (const row of rows) {
+      if (seen.has(row.participant_id)) {
+        continue;
+      }
+
+      seen.add(row.participant_id);
+      const meta = participantDisplayMap.get(row.participant_id);
+
+      if (meta) {
+        participantsList.push(meta);
+      }
+    }
 
     return {
       date: eventDate.date,
-      count: participants.length,
-      participants
+      count: participantsList.length,
+      participants: participantsList
     };
   });
 
@@ -73,10 +102,11 @@ export async function getEventResults(slug: string) {
     results,
     participantCount,
     bestDates: results.filter((result) => result.count === bestCount && bestCount > 0),
-    participants: participants
+    participants: (participantRows as ParticipantJoinRow[])
       .map<EventParticipantSummary>((participant) => ({
         id: participant.id,
-        name: participant.name
+        name: participant.name,
+        avatarUrl: participant.participant_accounts?.avatar_url ?? null
       }))
       .sort((a, b) => a.name.localeCompare(b.name, "ko-KR"))
   };

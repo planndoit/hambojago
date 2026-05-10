@@ -9,9 +9,19 @@ import { Label } from "@/components/ui/label";
 
 type Mode = "login" | "signup";
 
-export function AuthForm() {
+type AuthFormProps = {
+  authApiPath?: string;
+  redirectPath?: string;
+  initialMode?: Mode;
+};
+
+export function AuthForm({
+  authApiPath = "/api/auth",
+  redirectPath = "/",
+  initialMode = "login"
+}: AuthFormProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -21,7 +31,7 @@ export function AuthForm() {
 
       const username = String(formData.get("username") ?? "").trim();
       const password = String(formData.get("password") ?? "");
-      const response = await fetch("/api/auth", {
+      const response = await fetch(authApiPath, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -35,7 +45,7 @@ export function AuthForm() {
         return;
       }
 
-      router.push("/");
+      router.push(redirectPath);
       router.refresh();
     });
   }

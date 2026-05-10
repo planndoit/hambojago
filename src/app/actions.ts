@@ -5,6 +5,10 @@ import { randomUUID } from "crypto";
 
 import { deleteCurrentCreatorSession, getCurrentCreator } from "@/lib/auth";
 import { getDateRange } from "@/lib/date";
+import {
+  deleteCurrentParticipantSession,
+  getCurrentParticipantAccount
+} from "@/lib/participant-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 function createSlug() {
@@ -65,4 +69,97 @@ export async function createEventAction(formData: FormData) {
 export async function signOutAction() {
   await deleteCurrentCreatorSession();
   redirect("/");
+}
+
+export async function updateCreatorProfileAction(formData: FormData) {
+  const displayName = String(formData.get("displayName") ?? "").trim();
+  const creator = await getCurrentCreator();
+
+  if (!creator) {
+    redirect("/login");
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const { error } = await adminClient
+    .from("creator_accounts")
+    .update({
+      display_name: displayName.length > 0 ? displayName : null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", creator.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  redirect("/settings/profile");
+}
+
+export async function clearCreatorAvatarAction() {
+  const creator = await getCurrentCreator();
+
+  if (!creator) {
+    redirect("/login");
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const { error } = await adminClient
+    .from("creator_accounts")
+    .update({ avatar_url: null, updated_at: new Date().toISOString() })
+    .eq("id", creator.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  redirect("/settings/profile");
+}
+
+export async function participantSignOutAction() {
+  await deleteCurrentParticipantSession();
+  redirect("/");
+}
+
+export async function updateParticipantProfileAction(formData: FormData) {
+  const displayName = String(formData.get("displayName") ?? "").trim();
+  const account = await getCurrentParticipantAccount();
+
+  if (!account) {
+    redirect("/participant/login");
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const { error } = await adminClient
+    .from("participant_accounts")
+    .update({
+      display_name: displayName.length > 0 ? displayName : null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", account.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  redirect("/participant/settings");
+}
+
+export async function clearParticipantAvatarAction() {
+  const account = await getCurrentParticipantAccount();
+
+  if (!account) {
+    redirect("/participant/login");
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const { error } = await adminClient
+    .from("participant_accounts")
+    .update({ avatar_url: null, updated_at: new Date().toISOString() })
+    .eq("id", account.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  redirect("/participant/settings");
 }

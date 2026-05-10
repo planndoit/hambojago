@@ -4,29 +4,21 @@ import { randomBytes } from "crypto";
 import { hashSecret } from "@/lib/security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-const creatorSessionCookie = "hambojago_creator_session";
+const participantSessionCookie = "hambojago_participant_session";
 const sessionDays = 30;
 
-export function isValidUsername(username: string) {
-  return /^[a-zA-Z0-9_]{3,20}$/.test(username);
-}
-
-export function isValidPassword(password: string) {
-  return password.length >= 8;
-}
-
-export function createSessionToken() {
+export function createParticipantSessionToken() {
   return randomBytes(32).toString("base64url");
 }
 
-export async function createCreatorSession(creatorId: string) {
-  const token = createSessionToken();
+export async function createParticipantAccountSession(participantAccountId: string) {
+  const token = createParticipantSessionToken();
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + sessionDays);
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("creator_sessions").insert({
-    creator_id: creatorId,
+  const { error } = await supabase.from("participant_sessions").insert({
+    participant_account_id: participantAccountId,
     token_hash: hashSecret(token),
     expires_at: expiresAt.toISOString()
   });
@@ -36,7 +28,7 @@ export async function createCreatorSession(creatorId: string) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(creatorSessionCookie, token, {
+  cookieStore.set(participantSessionCookie, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -45,9 +37,9 @@ export async function createCreatorSession(creatorId: string) {
   });
 }
 
-export async function getCurrentCreator() {
+export async function getCurrentParticipantAccount() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(creatorSessionCookie)?.value;
+  const token = cookieStore.get(participantSessionCookie)?.value;
 
   if (!token) {
     return null;
@@ -55,8 +47,8 @@ export async function getCurrentCreator() {
 
   const supabase = createSupabaseAdminClient();
   const { data: session, error: sessionError } = await supabase
-    .from("creator_sessions")
-    .select("creator_id, expires_at")
+    .from("participant_sessions")
+    .select("participant_account_id, expires_at")
     .eq("token_hash", hashSecret(token))
     .single();
 
@@ -64,27 +56,27 @@ export async function getCurrentCreator() {
     return null;
   }
 
-  const { data: creator, error: creatorError } = await supabase
-    .from("creator_accounts")
+  const { data: account, error: accountError } = await supabase
+    .from("participant_accounts")
     .select("id, username, display_name, avatar_url")
-    .eq("id", session.creator_id)
+    .eq("id", session.participant_account_id)
     .single();
 
-  if (creatorError || !creator) {
+  if (accountError || !account) {
     return null;
   }
 
-  return creator;
+  return account;
 }
 
-export async function deleteCurrentCreatorSession() {
+export async function deleteCurrentParticipantSession() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(creatorSessionCookie)?.value;
+  const token = cookieStore.get(participantSessionCookie)?.value;
 
   if (token) {
     const supabase = createSupabaseAdminClient();
-    await supabase.from("creator_sessions").delete().eq("token_hash", hashSecret(token));
+    await supabase.from("participant_sessions").delete().eq("token_hash", hashSecret(token));
   }
 
-  cookieStore.delete(creatorSessionCookie);
+  cookieStore.delete(participantSessionCookie);
 }

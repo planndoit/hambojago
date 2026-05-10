@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Trophy, UserRound } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 import { AppTopBar } from "@/components/app-top-bar";
+import { ParticipantAvatar } from "@/components/participant-avatar";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,10 +167,14 @@ export default async function ResultsPage({
               </div>
               <div className="grid gap-2">
                 {participants.map((participant) => (
-                  <Button asChild className="h-12 justify-start px-4" key={participant.id} variant="outline">
+                  <Button asChild className="h-auto min-h-12 justify-start gap-3 px-4 py-2" key={participant.id} variant="outline">
                     <Link href={`/e/${event.slug}?participantId=${participant.id}`}>
-                      <UserRound className="size-4 text-orange-500" />
-                      {participant.name}
+                      <ParticipantAvatar
+                        avatarUrl={participant.avatarUrl}
+                        name={participant.name}
+                        size={32}
+                      />
+                      <span className="text-left font-bold">{participant.name}</span>
                     </Link>
                   </Button>
                 ))}
@@ -202,7 +207,21 @@ export default async function ResultsPage({
                       {result.count}명
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-stone-500">{result.participants.join(", ")}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {result.participants.map((participant) => (
+                      <span
+                        className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50/80 px-3 py-1.5 text-sm font-bold text-stone-800"
+                        key={participant.id}
+                      >
+                        <ParticipantAvatar
+                          avatarUrl={participant.avatarUrl}
+                          name={participant.name}
+                          size={28}
+                        />
+                        {participant.name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ))}
             </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
 
@@ -15,6 +15,12 @@ type ParticipationFormProps = {
   slug: string;
   dates: EventDate[];
   selectedParticipantId?: string;
+  participantAccount?: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 type MeResponse = {
@@ -81,7 +87,8 @@ function getCalendarMonths(dates: EventDate[]): CalendarMonth[] {
 export function ParticipationForm({
   slug,
   dates,
-  selectedParticipantId
+  selectedParticipantId,
+  participantAccount
 }: ParticipationFormProps) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -90,10 +97,21 @@ export function ParticipationForm({
   const [message, setMessage] = useState("");
   const [isParticipantVerified, setIsParticipantVerified] = useState(!selectedParticipantId);
   const [isPending, startTransition] = useTransition();
+  const didPrefillFromAccount = useRef(false);
 
   const selectedCount = selectedDates.size;
   const calendarMonths = useMemo(() => getCalendarMonths(dates), [dates]);
   const canEditSelection = !selectedParticipantId || isParticipantVerified;
+
+  useEffect(() => {
+    if (selectedParticipantId || !participantAccount || didPrefillFromAccount.current) {
+      return;
+    }
+
+    const label = participantAccount.display_name?.trim() || participantAccount.username;
+    setName(label);
+    didPrefillFromAccount.current = true;
+  }, [participantAccount, selectedParticipantId]);
 
   useEffect(() => {
     if (selectedParticipantId) {
