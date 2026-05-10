@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 type Mode = "login" | "signup";
 
 export function AuthForm() {
@@ -37,40 +41,39 @@ export function AuthForm() {
   }
 
   return (
-    <form action={handleSubmit} className="form">
-      <label className="field">
+    <form action={handleSubmit} className="grid gap-4">
+      <Label>
         <span>아이디</span>
-        <input
+        <Input
           autoComplete="username"
-          className="input"
           name="username"
           pattern="[a-zA-Z0-9_]{3,20}"
           placeholder="hambo_user"
           required
         />
-      </label>
-      <label className="field">
+      </Label>
+      <Label>
         <span>비밀번호</span>
-        <input
+        <Input
           autoComplete={mode === "login" ? "current-password" : "new-password"}
-          className="input"
           minLength={8}
           name="password"
           required
           type="password"
         />
-      </label>
-      {message ? <p className="muted">{message}</p> : null}
-      <button className="button" disabled={isPending} type="submit">
+      </Label>
+      {message ? <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">{message}</p> : null}
+      <Button className="w-full" disabled={isPending} type="submit">
         {mode === "login" ? "로그인" : "회원가입"}
-      </button>
-      <button
-        className="button secondary"
+      </Button>
+      <Button
+        className="w-full"
         onClick={() => setMode(mode === "login" ? "signup" : "login")}
         type="button"
+        variant="secondary"
       >
         {mode === "login" ? "회원가입으로 전환" : "로그인으로 전환"}
-      </button>
+      </Button>
     </form>
   );
 }

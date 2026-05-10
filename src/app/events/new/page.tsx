@@ -1,6 +1,13 @@
 import { redirect } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 import { createEventAction, signOutAction } from "@/app/actions";
+import { MobileShell } from "@/components/mobile-shell";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { getCurrentCreator } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -13,45 +20,49 @@ export default async function NewEventPage() {
   }
 
   return (
-    <main className="page">
-      <section className="card stack">
-        <div>
-          <p className="eyebrow">약속 생성</p>
-          <h1 className="title">날짜 범위만 정하면 링크가 만들어집니다</h1>
-          <p className="description">참여자는 범위 안의 날짜 중 가능한 날만 선택합니다.</p>
-        </div>
-        <form action={createEventAction} className="form">
-          <label className="field">
+    <MobileShell className="grid content-start gap-4">
+      <Card>
+        <CardHeader>
+          <p className="text-sm font-black text-orange-600">약속 생성</p>
+          <CardTitle>날짜 범위만 정하면 링크가 만들어집니다</CardTitle>
+          <CardDescription>참여자는 범위 안의 날짜 중 가능한 날만 선택합니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={createEventAction} className="grid gap-4">
+          <Label>
             <span>약속 이름</span>
-            <input className="input" name="title" placeholder="토요일 저녁 모임" required />
-          </label>
-          <label className="field">
+            <Input name="title" placeholder="토요일 저녁 모임" required />
+          </Label>
+          <Label>
             <span>설명</span>
-            <textarea
-              className="input"
+            <Textarea
               name="description"
               placeholder="간단한 안내를 적어주세요"
               rows={3}
             />
-          </label>
-          <label className="field">
+          </Label>
+          <div className="grid grid-cols-2 gap-3">
+          <Label>
             <span>시작 날짜</span>
-            <input className="input" name="startDate" required type="date" />
-          </label>
-          <label className="field">
+            <Input name="startDate" required type="date" />
+          </Label>
+          <Label>
             <span>종료 날짜</span>
-            <input className="input" name="endDate" required type="date" />
-          </label>
-          <button className="button" type="submit">
+            <Input name="endDate" required type="date" />
+          </Label>
+          </div>
+          <Button className="w-full" size="lg" type="submit">
             링크 만들기
-          </button>
+          </Button>
         </form>
+        </CardContent>
+      </Card>
         <form action={signOutAction}>
-          <button className="button secondary" type="submit">
-            로그아웃
-          </button>
+        <Button className="w-full" type="submit" variant="ghost">
+          <LogOut className="size-4" />
+          로그아웃
+        </Button>
         </form>
-      </section>
-    </main>
+    </MobileShell>
   );
 }

@@ -1,4 +1,6 @@
 import { ParticipationForm } from "@/components/participation-form";
+import { MobileShell } from "@/components/mobile-shell";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEventWithDates } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
@@ -26,15 +28,17 @@ export default async function EventPage({
   const event = await getEventWithDates(slug);
 
   return (
-    <main className="page">
-      <section className="card stack">
-        <div>
-          <p className="eyebrow">가능한 날짜를 골라주세요</p>
-          <h1 className="title">{event.title}</h1>
-          {event.description ? <p className="description">{event.description}</p> : null}
-        </div>
-        <ParticipationForm dates={event.event_dates} slug={event.slug} />
-      </section>
-    </main>
+    <MobileShell className="grid content-start gap-4 pb-0">
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <p className="text-sm font-black text-orange-600">가능한 날짜를 골라주세요</p>
+          <CardTitle>{event.title}</CardTitle>
+          {event.description ? <CardDescription>{event.description}</CardDescription> : null}
+        </CardHeader>
+        <CardContent className="pb-0">
+          <ParticipationForm dates={event.event_dates} slug={event.slug} />
+        </CardContent>
+      </Card>
+    </MobileShell>
   );
 }
