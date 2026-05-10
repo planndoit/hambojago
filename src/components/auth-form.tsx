@@ -3,8 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-
 type Mode = "login" | "signup";
 
 export function AuthForm() {
@@ -17,16 +15,19 @@ export function AuthForm() {
     startTransition(async () => {
       setMessage("");
 
-      const email = String(formData.get("email") ?? "").trim();
+      const username = String(formData.get("username") ?? "").trim();
       const password = String(formData.get("password") ?? "");
-      const supabase = createSupabaseBrowserClient();
-      const result =
-        mode === "login"
-          ? await supabase.auth.signInWithPassword({ email, password })
-          : await supabase.auth.signUp({ email, password });
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ mode, username, password })
+      });
+      const result = (await response.json()) as { message?: string };
 
-      if (result.error) {
-        setMessage(result.error.message);
+      if (!response.ok) {
+        setMessage(result.message ?? "로그인하지 못했습니다.");
         return;
       }
 
@@ -38,12 +39,26 @@ export function AuthForm() {
   return (
     <form action={handleSubmit} className="form">
       <label className="field">
-        <span>이메일</span>
-        <input className="input" name="email" required type="email" />
+        <span>아이디</span>
+        <input
+          autoComplete="username"
+          className="input"
+          name="username"
+          pattern="[a-zA-Z0-9_]{3,20}"
+          placeholder="hambo_user"
+          required
+        />
       </label>
       <label className="field">
         <span>비밀번호</span>
-        <input className="input" minLength={6} name="password" required type="password" />
+        <input
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
+          className="input"
+          minLength={8}
+          name="password"
+          required
+          type="password"
+        />
       </label>
       {message ? <p className="muted">{message}</p> : null}
       <button className="button" disabled={isPending} type="submit">

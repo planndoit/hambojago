@@ -3,9 +3,9 @@
 import { redirect } from "next/navigation";
 import { randomUUID } from "crypto";
 
+import { deleteCurrentCreatorSession, getCurrentCreator } from "@/lib/auth";
 import { getDateRange } from "@/lib/date";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function createSlug() {
   return randomUUID().slice(0, 8);
@@ -22,13 +22,9 @@ export async function createEventAction(formData: FormData) {
     throw new Error("약속 이름과 올바른 날짜 범위가 필요합니다.");
   }
 
-  const authClient = await createSupabaseServerClient();
-  const {
-    data: { user },
-    error: authError
-  } = await authClient.auth.getUser();
+  const creator = await getCurrentCreator();
 
-  if (authError || !user) {
+  if (!creator) {
     redirect("/login");
   }
 
@@ -38,7 +34,7 @@ export async function createEventAction(formData: FormData) {
   const { data: event, error: eventError } = await adminClient
     .from("events")
     .insert({
-      creator_id: user.id,
+      creator_id: creator.id,
       slug,
       title,
       description: description || null,
@@ -67,7 +63,6 @@ export async function createEventAction(formData: FormData) {
 }
 
 export async function signOutAction() {
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
+  await deleteCurrentCreatorSession();
   redirect("/");
 }

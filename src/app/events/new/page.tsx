@@ -1,17 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { createEventAction, signOutAction } from "@/app/actions";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentCreator } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewEventPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const creator = await getCurrentCreator();
 
-  if (!user) {
+  if (!creator) {
     redirect("/login");
   }
 

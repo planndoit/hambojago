@@ -1,16 +1,15 @@
-export function getPublicSupabaseEnv() {
+export function getSupabaseUrl() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Supabase public environment variables are missing.");
+  if (!supabaseUrl) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing.");
   }
 
-  return { supabaseUrl, supabaseAnonKey };
+  return supabaseUrl;
 }
 
 export function getSupabaseAdminEnv() {
-  const { supabaseUrl } = getPublicSupabaseEnv();
+  const supabaseUrl = getSupabaseUrl();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceRoleKey) {

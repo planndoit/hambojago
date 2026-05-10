@@ -1,3 +1,19 @@
+export type CreatorAccount = {
+  id: string;
+  username: string;
+  password_hash: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatorSession = {
+  id: string;
+  creator_id: string;
+  token_hash: string;
+  expires_at: string;
+  created_at: string;
+};
+
 export type Event = {
   id: string;
   creator_id: string;
@@ -38,6 +54,20 @@ export type Availability = {
 export type Database = {
   public: {
     Tables: {
+      creator_accounts: {
+        Row: CreatorAccount;
+        Insert: Omit<CreatorAccount, "id" | "created_at" | "updated_at"> &
+          Partial<Pick<CreatorAccount, "id" | "created_at" | "updated_at">>;
+        Update: Partial<Omit<CreatorAccount, "id" | "created_at">>;
+        Relationships: [];
+      };
+      creator_sessions: {
+        Row: CreatorSession;
+        Insert: Omit<CreatorSession, "id" | "created_at"> &
+          Partial<Pick<CreatorSession, "id" | "created_at">>;
+        Update: Partial<Omit<CreatorSession, "id" | "created_at">>;
+        Relationships: [];
+      };
       events: {
         Row: Event;
         Insert: Omit<Event, "id" | "created_at" | "updated_at"> &
