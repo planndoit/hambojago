@@ -20,11 +20,14 @@ export async function generateMetadata({
 }
 
 export default async function EventPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ participantId?: string }>;
 }) {
   const { slug } = await params;
+  const { participantId } = await searchParams;
   const event = await getEventWithDates(slug);
 
   return (
@@ -36,7 +39,11 @@ export default async function EventPage({
           {event.description ? <CardDescription>{event.description}</CardDescription> : null}
         </CardHeader>
         <CardContent className="pb-0">
-          <ParticipationForm dates={event.event_dates} slug={event.slug} />
+          <ParticipationForm
+            dates={event.event_dates}
+            selectedParticipantId={participantId}
+            slug={event.slug}
+          />
         </CardContent>
       </Card>
     </MobileShell>

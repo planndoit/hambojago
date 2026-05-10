@@ -14,11 +14,19 @@ import { cn } from "@/lib/utils";
 type ParticipationFormProps = {
   slug: string;
   dates: EventDate[];
+  selectedParticipantId?: string;
 };
 
 type MeResponse = {
   participant: { id: string; name: string } | null;
   dates: string[];
+};
+
+type VerifyResponse = {
+  editToken?: string;
+  participant?: { id: string; name: string };
+  dates?: string[];
+  message?: string;
 };
 
 const tokenKey = (slug: string) => `hamboja:event:${slug}:participantToken`;
@@ -70,18 +78,28 @@ function getCalendarMonths(dates: EventDate[]): CalendarMonth[] {
   });
 }
 
-export function ParticipationForm({ slug, dates }: ParticipationFormProps) {
+export function ParticipationForm({
+  slug,
+  dates,
+  selectedParticipantId
+}: ParticipationFormProps) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState("");
+  const [isParticipantVerified, setIsParticipantVerified] = useState(!selectedParticipantId);
   const [isPending, startTransition] = useTransition();
 
   const selectedCount = selectedDates.size;
   const calendarMonths = useMemo(() => getCalendarMonths(dates), [dates]);
+  const canEditSelection = !selectedParticipantId || isParticipantVerified;
 
   useEffect(() => {
+    if (selectedParticipantId) {
+      return;
+    }
+
     const storedToken = window.localStorage.getItem(tokenKey(slug)) ?? "";
 
     if (!storedToken) {
@@ -101,7 +119,7 @@ export function ParticipationForm({ slug, dates }: ParticipationFormProps) {
       .catch(() => {
         setMessage("기존 선택을 불러오지 못했습니다.");
       });
-  }, [slug]);
+  }, [selectedParticipantId, slug]);
 
   function toggleDate(date: string) {
     setSelectedDates((current) => {
@@ -146,6 +164,74 @@ export function ParticipationForm({ slug, dates }: ParticipationFormProps) {
       router.push(`/e/${slug}/results`);
       router.refresh();
     });
+  }
+
+  function verifyParticipant() {
+    if (!selectedParticipantId) {
+      return;
+    }
+
+    startTransition(async () => {
+      setMessage("");
+
+      const response = await fetch(`/api/events/${slug}/participants/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          participantId: selectedParticipantId,
+          pin
+        })
+      });
+
+      const data = (await response.json()) as VerifyResponse;
+
+      if (!response.ok || !data.editToken || !data.participant || !data.dates) {
+        setMessage(data.message ?? "선택을 불러오지 못했습니다.");
+        return;
+      }
+
+      window.localStorage.setItem(tokenKey(slug), data.editToken);
+      setName(data.participant.name);
+      setSelectedDates(new Set(data.dates));
+      setIsParticipantVerified(true);
+      setMessage("");
+    });
+  }
+
+  if (!canEditSelection) {
+    return (
+      <div className="grid gap-5 pb-5">
+        <div className="rounded-[1.75rem] bg-orange-50 p-4">
+          <p className="text-sm font-black text-orange-700">선택 수정</p>
+          <p className="mt-1 text-sm leading-6 text-stone-600">
+            처음 입력한 4자리 PIN을 확인한 뒤 기존 선택을 불러옵니다.
+          </p>
+        </div>
+        <Label>
+          <span>처음 입력한 4자리 PIN</span>
+          <Input
+            inputMode="numeric"
+            maxLength={4}
+            onChange={(event) => setPin(event.target.value)}
+            pattern="\d{4}"
+            placeholder="1234"
+            value={pin}
+          />
+        </Label>
+        {message ? <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">{message}</p> : null}
+        <Button
+          className="w-full"
+          disabled={isPending || !/^\d{4}$/.test(pin)}
+          onClick={verifyParticipant}
+          size="lg"
+          type="button"
+        >
+          기존 선택 불러오기
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -228,7 +314,7 @@ export function ParticipationForm({ slug, dates }: ParticipationFormProps) {
         />
       </Label>
       <Label>
-        <span>4자리 PIN</span>
+        <span>처음 입력한 4자리 PIN</span>
         <Input
           inputMode="numeric"
           maxLength={4}

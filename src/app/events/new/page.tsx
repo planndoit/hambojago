@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { LogOut } from "lucide-react";
 
-import { createEventAction, signOutAction } from "@/app/actions";
+import { createEventAction } from "@/app/actions";
+import { AppTopBar } from "@/components/app-top-bar";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ export default async function NewEventPage() {
 
   return (
     <MobileShell className="grid content-start gap-4">
+      <AppTopBar title="약속 만들기" />
       <Card>
         <CardHeader>
           <p className="text-sm font-black text-orange-600">약속 생성</p>
@@ -57,12 +58,6 @@ export default async function NewEventPage() {
         </form>
         </CardContent>
       </Card>
-        <form action={signOutAction}>
-        <Button className="w-full" type="submit" variant="ghost">
-          <LogOut className="size-4" />
-          로그아웃
-        </Button>
-        </form>
     </MobileShell>
   );
 }

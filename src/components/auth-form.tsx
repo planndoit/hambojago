@@ -35,7 +35,7 @@ export function AuthForm() {
         return;
       }
 
-      router.push("/events/new");
+      router.push("/");
       router.refresh();
     });
   }

@@ -70,7 +70,7 @@ export async function POST(
   const editTokenHash = editToken ? hashSecret(editToken) : "";
   const participantQuery = supabase
     .from("participants")
-    .select("id")
+    .select("id, pin_hash")
     .eq("event_id", event.id)
     .limit(1);
 
@@ -83,6 +83,14 @@ export async function POST(
   }
 
   const existingParticipant = existingParticipants.at(0);
+
+  if (editTokenHash && existingParticipant && existingParticipant.pin_hash !== pinHash) {
+    return NextResponse.json(
+      { message: "처음 입력한 4자리 PIN이 일치해야 수정할 수 있습니다." },
+      { status: 403 }
+    );
+  }
+
   const nextEditToken = existingParticipant && editToken ? editToken : createEditToken();
   const nextEditTokenHash = hashSecret(nextEditToken);
 
@@ -93,7 +101,6 @@ export async function POST(
       .from("participants")
       .update({
         name,
-        pin_hash: pinHash,
         edit_token_hash: nextEditTokenHash,
         updated_at: new Date().toISOString()
       })

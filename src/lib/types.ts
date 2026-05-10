@@ -114,6 +114,11 @@ export type EventResult = {
   participants: string[];
 };
 
+export type EventParticipantSummary = {
+  id: string;
+  name: string;
+};
+
 export type CreatorEventSummary = {
   event: Event;
   participantCount: number;

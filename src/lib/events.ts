@@ -1,7 +1,12 @@
 import { notFound } from "next/navigation";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import type { CreatorEventSummary, EventResult, EventWithDates } from "@/lib/types";
+import type {
+  CreatorEventSummary,
+  EventParticipantSummary,
+  EventResult,
+  EventWithDates
+} from "@/lib/types";
 
 export async function getEventWithDates(slug: string): Promise<EventWithDates> {
   const supabase = createSupabaseAdminClient();
@@ -67,7 +72,13 @@ export async function getEventResults(slug: string) {
     event,
     results,
     participantCount,
-    bestDates: results.filter((result) => result.count === bestCount && bestCount > 0)
+    bestDates: results.filter((result) => result.count === bestCount && bestCount > 0),
+    participants: participants
+      .map<EventParticipantSummary>((participant) => ({
+        id: participant.id,
+        name: participant.name
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "ko-KR"))
   };
 }
 

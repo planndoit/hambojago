@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Trophy } from "lucide-react";
+import { Trophy, UserRound } from "lucide-react";
 
+import { AppTopBar } from "@/components/app-top-bar";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,13 +69,14 @@ export default async function ResultsPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { event, results, participantCount, bestDates } = await getEventResults(slug);
+  const { event, results, participantCount, bestDates, participants } = await getEventResults(slug);
   const bestDateSet = new Set(bestDates.map((result) => result.date));
   const votedResults = results.filter((result) => result.count > 0);
   const calendarMonths = getResultCalendarMonths(results);
 
   return (
     <MobileShell className="grid content-start gap-4">
+      <AppTopBar title="결과 보기" />
       <Card>
         <CardHeader>
           <p className="text-sm font-black text-orange-600">결과</p>
@@ -152,8 +154,38 @@ export default async function ResultsPage({
               </div>
             ))}
           </section>
+          {participants.length > 0 ? (
+            <section className="grid gap-3" aria-label="참여자별 선택 수정">
+              <div>
+                <h2 className="text-lg font-black tracking-[-0.03em] text-stone-950">
+                  참여자 선택 수정
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-stone-500">
+                  이름을 선택하고 처음 입력한 4자리 PIN을 입력하면 해당 선택을 수정할 수 있어요.
+                </p>
+              </div>
+              <div className="grid gap-2">
+                {participants.map((participant) => (
+                  <Button asChild className="h-12 justify-start px-4" key={participant.id} variant="outline">
+                    <Link href={`/e/${event.slug}?participantId=${participant.id}`}>
+                      <UserRound className="size-4 text-orange-500" />
+                      {participant.name}
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+            </section>
+          ) : null}
           {votedResults.length > 0 ? (
-            <div className="grid gap-3">
+            <section className="grid gap-3" aria-label="투표된 날짜 목록">
+              <div>
+                <h2 className="text-lg font-black tracking-[-0.03em] text-stone-950">
+                  투표된 날짜
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-stone-500">
+                  한 명 이상 선택한 날짜만 모아 보여줍니다.
+                </p>
+              </div>
               {votedResults.map((result) => (
                 <div
                   className={cn(
@@ -173,11 +205,8 @@ export default async function ResultsPage({
                   <p className="mt-2 text-sm text-stone-500">{result.participants.join(", ")}</p>
                 </div>
               ))}
-            </div>
+            </section>
           ) : null}
-          <Button asChild size="lg" className="w-full">
-            <Link href={`/e/${event.slug}`}>내 선택 수정하기</Link>
-          </Button>
         </CardContent>
       </Card>
     </MobileShell>
