@@ -113,3 +113,10 @@ export type EventResult = {
   count: number;
   participants: string[];
 };
+
+export type CreatorEventSummary = {
+  event: Event;
+  participantCount: number;
+  bestDate: string | null;
+  bestDateCount: number;
+};
