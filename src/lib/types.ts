@@ -24,6 +24,7 @@ export type Event = {
   description: string | null;
   start_date: string;
   end_date: string;
+  vote_deadline: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -107,8 +108,8 @@ export type Database = {
       };
       events: {
         Row: Event;
-        Insert: Omit<Event, "id" | "created_at" | "updated_at"> &
-          Partial<Pick<Event, "id" | "created_at" | "updated_at">>;
+        Insert: Omit<Event, "id" | "created_at" | "updated_at" | "vote_deadline"> &
+          Partial<Pick<Event, "id" | "created_at" | "updated_at" | "vote_deadline">>;
         Update: Partial<Omit<Event, "id" | "created_at">>;
         Relationships: [];
       };

@@ -15,15 +15,13 @@ export default async function ParticipantRegisterPage({
     typeof next === "string" && next.startsWith("/") ? next : "/participant/settings";
 
   return (
-    <MobileShell className="grid content-start gap-4">
-      <AppTopBar title="참여자 회원가입" />
+    <MobileShell className="grid content-start gap-5">
+      <AppTopBar title="참여자 가입" />
       <Card>
         <CardHeader>
-          <p className="text-sm font-black text-orange-600">참여자 계정</p>
-          <CardTitle>회원가입 후 약속 링크로 돌아가세요</CardTitle>
-          <CardDescription>
-            가입을 마치면 돌아온 페이지에서 날짜를 선택할 수 있습니다.
-          </CardDescription>
+          <p className="hb-kicker">참여자</p>
+          <CardTitle>가입 후 약속 링크로 돌아가요</CardTitle>
+          <CardDescription>가입을 마치면 아까 보던 참여 화면에서 날짜를 고를 수 있어요.</CardDescription>
         </CardHeader>
         <CardContent>
           <AuthForm

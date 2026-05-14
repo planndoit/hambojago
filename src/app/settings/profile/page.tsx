@@ -16,13 +16,13 @@ export default async function CreatorProfilePage() {
   }
 
   return (
-    <MobileShell className="grid content-start gap-4">
+    <MobileShell className="grid content-start gap-5">
       <AppTopBar title="회원정보" />
       <Card>
         <CardHeader>
-          <p className="text-sm font-black text-orange-600">프로필</p>
+          <p className="hb-kicker">생성자</p>
           <CardTitle>이름과 사진</CardTitle>
-          <CardDescription>표시 이름과 프로필 사진은 필요할 때 결과 등 화면에 반영됩니다.</CardDescription>
+          <CardDescription>표시 이름과 사진은 결과 등 화면에 반영될 수 있어요.</CardDescription>
         </CardHeader>
         <CardContent>
           <CreatorProfileForm

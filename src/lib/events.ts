@@ -9,6 +9,34 @@ import type {
   ResultParticipantDisplay
 } from "@/lib/types";
 
+export async function participantHasAvailabilityForEvent(
+  eventId: string,
+  participantAccountId: string
+): Promise<boolean> {
+  const supabase = createSupabaseAdminClient();
+  const { data: participant, error: participantError } = await supabase
+    .from("participants")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("participant_account_id", participantAccountId)
+    .maybeSingle();
+
+  if (participantError || !participant) {
+    return false;
+  }
+
+  const { count, error: countError } = await supabase
+    .from("availability")
+    .select("id", { count: "exact", head: true })
+    .eq("participant_id", participant.id);
+
+  if (countError) {
+    return false;
+  }
+
+  return (count ?? 0) > 0;
+}
+
 export async function getEventWithDates(slug: string): Promise<EventWithDates> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase

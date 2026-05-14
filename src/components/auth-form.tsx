@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { PendingOverlay } from "@/components/pending-overlay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -51,7 +52,8 @@ export function AuthForm({
   }
 
   return (
-    <form action={handleSubmit} className="grid gap-4">
+    <form action={handleSubmit} className="relative grid gap-5">
+      <PendingOverlay show={isPending} />
       <Label>
         <span>아이디</span>
         <Input
@@ -73,14 +75,14 @@ export function AuthForm({
         />
       </Label>
       {message ? <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">{message}</p> : null}
-      <Button className="w-full" disabled={isPending} type="submit">
+      <Button className="w-full" disabled={isPending} size="lg" type="submit">
         {mode === "login" ? "로그인" : "회원가입"}
       </Button>
       <Button
         className="w-full"
         onClick={() => setMode(mode === "login" ? "signup" : "login")}
         type="button"
-        variant="secondary"
+        variant="outline"
       >
         {mode === "login" ? "회원가입으로 전환" : "로그인으로 전환"}
       </Button>

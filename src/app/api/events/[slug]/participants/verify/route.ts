@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isVotingClosed } from "@/lib/event-voting";
 import { createEditToken, hashSecret, isValidPin } from "@/lib/security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -27,12 +28,16 @@ export async function POST(
   const supabase = createSupabaseAdminClient();
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id")
+    .select("id, vote_deadline")
     .eq("slug", slug)
     .single();
 
   if (eventError || !event) {
     return NextResponse.json({ message: "약속을 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  if (isVotingClosed(event.vote_deadline)) {
+    return NextResponse.json({ message: "투표 마감 시간이 지났습니다." }, { status: 403 });
   }
 
   const { data: participant, error: participantError } = await supabase

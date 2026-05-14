@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html className="font-sans antialiased" lang="ko">
       <body>{children}</body>
     </html>
   );

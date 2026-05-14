@@ -2,19 +2,24 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown } from "lucide-react";
+import { BarChart3, CalendarHeart, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatKoreanDate } from "@/lib/date";
+import { isVotingClosed } from "@/lib/event-voting";
+import { getKrDayMeta } from "@/lib/kr-calendar";
 import type { EventDate } from "@/lib/types";
+import { formatSeoulDateTimeLabel } from "@/lib/seoul-time";
 import { cn } from "@/lib/utils";
+import { PendingOverlay } from "@/components/pending-overlay";
 
 type ParticipationFormProps = {
   slug: string;
   dates: EventDate[];
   selectedParticipantId?: string;
+  voteDeadline: string | null;
   participantAccount?: {
     id: string;
     username: string;
@@ -88,6 +93,7 @@ export function ParticipationForm({
   slug,
   dates,
   selectedParticipantId,
+  voteDeadline,
   participantAccount
 }: ParticipationFormProps) {
   const router = useRouter();
@@ -102,6 +108,7 @@ export function ParticipationForm({
   const selectedCount = selectedDates.size;
   const calendarMonths = useMemo(() => getCalendarMonths(dates), [dates]);
   const canEditSelection = !selectedParticipantId || isParticipantVerified;
+  const votingClosed = isVotingClosed(voteDeadline);
 
   useEffect(() => {
     if (selectedParticipantId || !participantAccount || didPrefillFromAccount.current) {
@@ -131,15 +138,24 @@ export function ParticipationForm({
           return;
         }
 
+        if (data.dates.length > 0) {
+          router.replace(`/e/${slug}/results`);
+          return;
+        }
+
         setName(data.participant.name);
         setSelectedDates(new Set(data.dates));
       })
       .catch(() => {
         setMessage("기존 선택을 불러오지 못했습니다.");
       });
-  }, [selectedParticipantId, slug]);
+  }, [selectedParticipantId, slug, router]);
 
   function toggleDate(date: string) {
+    if (votingClosed) {
+      return;
+    }
+
     setSelectedDates((current) => {
       const next = new Set(current);
 
@@ -220,16 +236,24 @@ export function ParticipationForm({
 
   if (!canEditSelection) {
     return (
-      <div className="grid gap-5 pb-5">
-        <div className="rounded-[1.75rem] bg-orange-50 p-4">
-          <p className="text-sm font-black text-orange-700">선택 수정</p>
-          <p className="mt-1 text-sm leading-6 text-stone-600">
-            처음 입력한 4자리 PIN을 확인한 뒤 기존 선택을 불러옵니다.
+      <div className="relative grid gap-5 pb-6">
+        <PendingOverlay show={isPending} />
+        {votingClosed ? (
+          <p className="rounded-2xl bg-stone-900 p-4 text-sm font-bold text-orange-100">
+            투표 마감({voteDeadline ? formatSeoulDateTimeLabel(voteDeadline) : ""})이 지나 선택을 바꿀 수
+            없습니다.
+          </p>
+        ) : null}
+        <div className="hb-calendar-surface p-4">
+          <p className="text-sm font-black text-stone-900">선택 수정</p>
+          <p className="mt-1 text-sm leading-relaxed text-stone-600">
+            처음 입력한 4자리 PIN을 입력하면 기존 선택을 불러옵니다.
           </p>
         </div>
         <Label>
-          <span>처음 입력한 4자리 PIN</span>
+          <span>4자리 PIN</span>
           <Input
+            disabled={votingClosed}
             inputMode="numeric"
             maxLength={4}
             onChange={(event) => setPin(event.target.value)}
@@ -241,7 +265,7 @@ export function ParticipationForm({
         {message ? <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">{message}</p> : null}
         <Button
           className="w-full"
-          disabled={isPending || !/^\d{4}$/.test(pin)}
+          disabled={isPending || !/^\d{4}$/.test(pin) || votingClosed}
           onClick={verifyParticipant}
           size="lg"
           type="button"
@@ -253,26 +277,52 @@ export function ParticipationForm({
   }
 
   return (
-    <div className="grid gap-5">
-      <section className="grid gap-4" aria-label="후보 날짜 달력">
-        <div className="flex items-center justify-between rounded-3xl bg-orange-50 px-4 py-3">
+    <div className="relative grid gap-5">
+      <PendingOverlay show={isPending} />
+      {votingClosed ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/90 p-4 text-sm text-red-900">
+          <BarChart3 className="mt-0.5 size-5 shrink-0 text-red-600" />
           <div>
-            <p className="text-xs font-bold text-orange-700">선택한 날짜</p>
-            <p className="text-lg font-black text-stone-950">{selectedCount}개</p>
+            <p className="font-black">투표가 마감되었습니다.</p>
+            <p className="mt-1 leading-relaxed">
+              {voteDeadline ? `마감: ${formatSeoulDateTimeLabel(voteDeadline)}` : null} 새로 선택하거나
+              수정할 수 없어요. 결과만 확인할 수 있습니다.
+            </p>
           </div>
-          <ChevronDown className="size-5 text-orange-500" />
+        </div>
+      ) : null}
+      <section className="grid gap-4" aria-label="후보 날짜 달력">
+        <div className="hb-calendar-surface flex items-center justify-between gap-3 px-4 py-3.5">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+              <CalendarHeart className="size-5" />
+            </span>
+            <div>
+              <p className="text-[0.7rem] font-bold uppercase tracking-wide text-stone-500">
+                선택한 날짜
+              </p>
+              <p className="text-lg font-black text-stone-950">{selectedCount}개</p>
+            </div>
+          </div>
         </div>
         {calendarMonths.map((month) => (
-          <div className="rounded-[1.75rem] border border-orange-100 bg-white p-3" key={month.key}>
-            <div className="mb-3 flex items-center justify-between px-1">
-              <h2 className="text-lg font-black tracking-[-0.03em] text-stone-950">
+          <div className="hb-calendar-surface p-3 sm:p-4" key={month.key}>
+            <div className="mb-3 flex items-center justify-between px-0.5">
+              <h2 className="text-base font-black tracking-[-0.03em] text-stone-950 sm:text-lg">
                 {month.title}
               </h2>
-              <span className="text-xs font-bold text-stone-400">복수 선택</span>
+              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[0.65rem] font-bold text-orange-800">
+                복수 선택
+              </span>
             </div>
-            <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[0.7rem] font-bold text-stone-400">
-              {weekdays.map((weekday) => (
-                <span key={weekday}>{weekday}</span>
+            <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[0.68rem] font-bold text-stone-400">
+              {weekdays.map((weekday, wi) => (
+                <span
+                  className={cn((wi === 0 || wi === 6) && "font-black text-red-500")}
+                  key={weekday}
+                >
+                  {weekday}
+                </span>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1">
@@ -282,26 +332,36 @@ export function ParticipationForm({
                 }
 
                 const selected = selectedDates.has(cell.date);
+                const meta = getKrDayMeta(cell.date);
+                const redDay = meta.isWeekend || meta.isHoliday;
+                const titleAttr = meta.holidayName ?? undefined;
 
                 return (
                   <button
                     aria-pressed={selected}
                     className={cn(
-                      "relative flex aspect-square min-h-10 items-center justify-center rounded-2xl text-sm font-black transition active:scale-95",
+                      "relative flex aspect-square min-h-10 items-center justify-center rounded-xl text-sm font-black transition active:scale-[0.96]",
                       cell.isCandidate
-                        ? "bg-orange-50 text-stone-800 shadow-sm hover:bg-orange-100"
-                        : "cursor-not-allowed bg-stone-50 text-stone-300",
-                      selected && "bg-orange-500 text-white shadow-lg shadow-orange-500/25 hover:bg-orange-500"
+                        ? "bg-orange-50/90 text-stone-800 shadow-sm hover:bg-orange-100"
+                        : "cursor-not-allowed bg-stone-100/60 text-stone-300",
+                      selected &&
+                        "bg-orange-500 text-white shadow-[0_8px_20px_-6px_rgb(234_88_12_/55%)] hover:bg-orange-500",
+                      redDay &&
+                        cell.isCandidate &&
+                        !selected &&
+                        "text-red-600 hover:text-red-700",
+                      redDay && !cell.isCandidate && !selected && "text-red-400"
                     )}
-                    disabled={!cell.isCandidate}
+                    disabled={!cell.isCandidate || votingClosed}
                     key={cell.date}
                     onClick={() => toggleDate(cell.date)}
+                    title={titleAttr}
                     type="button"
                   >
                     {cell.day}
                     {selected ? (
-                      <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-white text-orange-500">
-                        <Check className="size-3" />
+                      <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-white text-orange-500 shadow-sm">
+                        <Check className="size-3" strokeWidth={3} />
                       </span>
                     ) : null}
                   </button>
@@ -312,46 +372,57 @@ export function ParticipationForm({
         ))}
       </section>
       {selectedCount > 0 ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {[...selectedDates].sort().map((date) => (
-            <span
-              className="shrink-0 rounded-full bg-stone-900 px-3 py-2 text-xs font-bold text-white"
-              key={date}
-            >
-              {formatKoreanDate(date)}
-            </span>
-          ))}
+        <div className="hb-calendar-surface px-3 py-3">
+          <p className="mb-2 text-[0.7rem] font-bold uppercase tracking-wide text-stone-500">
+            선택 요약
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[...selectedDates].sort().map((date) => (
+              <span
+                className="rounded-full border border-stone-200 bg-stone-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm"
+                key={date}
+              >
+                {formatKoreanDate(date)}
+              </span>
+            ))}
+          </div>
         </div>
       ) : null}
-      <Label>
-        <span>이름</span>
-        <Input
-          onChange={(event) => setName(event.target.value)}
-          placeholder="홍길동"
-          value={name}
-        />
-      </Label>
-      <Label>
-        <span>처음 입력한 4자리 PIN</span>
-        <Input
-          inputMode="numeric"
-          maxLength={4}
-          onChange={(event) => setPin(event.target.value)}
-          pattern="\d{4}"
-          placeholder="1234"
-          value={pin}
-        />
-      </Label>
+      <div className="grid gap-4 rounded-2xl border border-orange-100/80 bg-white/80 p-4 shadow-sm">
+        <Label>
+          <span>표시 이름</span>
+          <Input
+            disabled={votingClosed}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="홍길동"
+            value={name}
+          />
+        </Label>
+        <Label>
+          <span>4자리 PIN (나중에 수정할 때 필요해요)</span>
+          <Input
+            disabled={votingClosed}
+            inputMode="numeric"
+            maxLength={4}
+            onChange={(event) => setPin(event.target.value)}
+            pattern="\d{4}"
+            placeholder="1234"
+            value={pin}
+          />
+        </Label>
+      </div>
       {message ? <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">{message}</p> : null}
-      <div className="sticky bottom-0 -mx-5 bg-gradient-to-t from-white via-white to-white/0 px-5 pb-5 pt-8">
+      <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-orange-50 via-orange-50/95 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-10 sm:-mx-5 sm:px-5">
         <Button
-          className="w-full"
-          disabled={isPending || selectedCount === 0 || !name || !/^\d{4}$/.test(pin)}
+          className="w-full shadow-[0_14px_36px_-12px_rgb(234_88_12_/50%)]"
+          disabled={
+            votingClosed || isPending || selectedCount === 0 || !name || !/^\d{4}$/.test(pin)
+          }
           onClick={submit}
           size="lg"
           type="button"
         >
-          선택 완료
+          선택 완료하고 결과 보기
         </Button>
       </div>
     </div>

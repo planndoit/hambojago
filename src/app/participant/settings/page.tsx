@@ -16,14 +16,14 @@ export default async function ParticipantSettingsPage() {
   }
 
   return (
-    <MobileShell className="grid content-start gap-4">
+    <MobileShell className="grid content-start gap-5">
       <AppTopBar title="참여자 프로필" />
       <Card>
         <CardHeader>
-          <p className="text-sm font-black text-orange-600">회원정보</p>
+          <p className="hb-kicker">프로필</p>
           <CardTitle>이름과 사진</CardTitle>
           <CardDescription>
-            이 정보는 약속에 참여할 때 기본 이름으로 쓰이고, 결과 화면 아바타로도 표시됩니다.
+            약속 참여 시 기본 이름으로 쓰이고, 결과 화면 아바타로도 표시됩니다.
           </CardDescription>
         </CardHeader>
         <CardContent>

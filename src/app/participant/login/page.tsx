@@ -15,14 +15,14 @@ export default async function ParticipantLoginPage({
     typeof next === "string" && next.startsWith("/") ? next : "/participant/settings";
 
   return (
-    <MobileShell className="grid content-start gap-4">
+    <MobileShell className="grid content-start gap-5">
       <AppTopBar title="참여자 로그인" />
       <Card>
         <CardHeader>
-          <p className="text-sm font-black text-orange-600">참여자 계정</p>
-          <CardTitle>로그인 후 약속에 참여하세요</CardTitle>
+          <p className="hb-kicker">참여자</p>
+          <CardTitle>로그인하고 프로필을 연결해요</CardTitle>
           <CardDescription>
-            로그인하면 프로필 사진이 결과 화면에 표시됩니다. 계속해서 이름과 PIN으로 참여하는 방식은 그대로입니다.
+            이름과 PIN으로 참여하는 방식은 그대로예요. 로그인하면 결과 화면에 아바타가 보입니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
