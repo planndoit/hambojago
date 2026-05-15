@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isVotingClosed } from "@/lib/event-voting";
+import { pickEventIdFromRow, pickVoteDeadlineFromRow } from "@/lib/event-row";
 import { createEditToken, hashSecret, isValidPin } from "@/lib/security";
 import { getCurrentParticipantAccount } from "@/lib/participant-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -48,24 +49,30 @@ export async function POST(
   const linkedAccountId = linkedAccount?.id ?? null;
 
   const supabase = createSupabaseAdminClient();
-  const { data: event, error: eventError } = await supabase
+  const { data: eventRow, error: eventError } = await supabase
     .from("events")
-    .select("id, vote_deadline")
+    .select("*")
     .eq("slug", slug)
     .single();
 
-  if (eventError || !event) {
+  if (eventError || !eventRow) {
     return NextResponse.json({ message: "약속을 찾을 수 없습니다." }, { status: 404 });
   }
 
-  if (isVotingClosed(event.vote_deadline)) {
+  const eventId = pickEventIdFromRow(eventRow);
+
+  if (!eventId) {
+    return NextResponse.json({ message: "약속을 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  if (isVotingClosed(pickVoteDeadlineFromRow(eventRow))) {
     return NextResponse.json({ message: "투표 마감 시간이 지났습니다." }, { status: 403 });
   }
 
   const { data: candidateDates, error: datesError } = await supabase
     .from("event_dates")
     .select("date")
-    .eq("event_id", event.id);
+    .eq("event_id", eventId);
 
   if (datesError) {
     return NextResponse.json({ message: datesError.message }, { status: 500 });
@@ -90,7 +97,7 @@ export async function POST(
     const { data: rows, error } = await supabase
       .from("participants")
       .select("id, pin_hash, participant_account_id")
-      .eq("event_id", event.id)
+      .eq("event_id", eventId)
       .eq("edit_token_hash", editTokenHash)
       .limit(1);
 
@@ -105,7 +112,7 @@ export async function POST(
     const { data: row, error } = await supabase
       .from("participants")
       .select("id, pin_hash, participant_account_id")
-      .eq("event_id", event.id)
+      .eq("event_id", eventId)
       .eq("participant_account_id", linkedAccountId)
       .maybeSingle();
 
@@ -120,7 +127,7 @@ export async function POST(
     const { data: rows, error } = await supabase
       .from("participants")
       .select("id, pin_hash, participant_account_id")
-      .eq("event_id", event.id)
+      .eq("event_id", eventId)
       .eq("name", name)
       .eq("pin_hash", pinHash)
       .limit(1);
@@ -169,7 +176,7 @@ export async function POST(
     : await supabase
         .from("participants")
         .insert({
-          event_id: event.id,
+          event_id: eventId,
           name,
           pin_hash: pinHash,
           edit_token_hash: nextEditTokenHash,
@@ -201,7 +208,7 @@ export async function POST(
 
   const { error: availabilityError } = await supabase.from("availability").insert(
     selectedDates.map((date) => ({
-      event_id: event.id,
+      event_id: eventId,
       participant_id: participant.id,
       date
     }))

@@ -15,6 +15,12 @@ export function isValidPassword(password: string) {
   return password.length >= 8;
 }
 
+export function isValidDisplayName(name: string) {
+  const trimmed = name.trim();
+
+  return trimmed.length >= 1 && trimmed.length <= 60;
+}
+
 export function createSessionToken() {
   return randomBytes(32).toString("base64url");
 }

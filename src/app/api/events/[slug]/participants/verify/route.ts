@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isVotingClosed } from "@/lib/event-voting";
+import { pickEventIdFromRow, pickVoteDeadlineFromRow } from "@/lib/event-row";
 import { createEditToken, hashSecret, isValidPin } from "@/lib/security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -26,17 +27,23 @@ export async function POST(
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: event, error: eventError } = await supabase
+  const { data: eventRow, error: eventError } = await supabase
     .from("events")
-    .select("id, vote_deadline")
+    .select("*")
     .eq("slug", slug)
     .single();
 
-  if (eventError || !event) {
+  if (eventError || !eventRow) {
     return NextResponse.json({ message: "약속을 찾을 수 없습니다." }, { status: 404 });
   }
 
-  if (isVotingClosed(event.vote_deadline)) {
+  const eventId = pickEventIdFromRow(eventRow);
+
+  if (!eventId) {
+    return NextResponse.json({ message: "약속을 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  if (isVotingClosed(pickVoteDeadlineFromRow(eventRow))) {
     return NextResponse.json({ message: "투표 마감 시간이 지났습니다." }, { status: 403 });
   }
 
@@ -44,7 +51,7 @@ export async function POST(
     .from("participants")
     .select("id, name, pin_hash")
     .eq("id", participantId)
-    .eq("event_id", event.id)
+    .eq("event_id", eventId)
     .single();
 
   if (participantError || !participant) {

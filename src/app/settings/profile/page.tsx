@@ -21,8 +21,8 @@ export default async function CreatorProfilePage() {
       <Card>
         <CardHeader>
           <p className="hb-kicker">생성자</p>
-          <CardTitle>이름과 사진</CardTitle>
-          <CardDescription>표시 이름과 사진은 결과 등 화면에 반영될 수 있어요.</CardDescription>
+          <CardTitle>회원정보 수정</CardTitle>
+          <CardDescription>아이디·이름·비밀번호·프로필 사진을 관리합니다.</CardDescription>
         </CardHeader>
         <CardContent>
           <CreatorProfileForm

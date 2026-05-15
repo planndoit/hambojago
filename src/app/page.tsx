@@ -171,9 +171,14 @@ function LandingHome() {
             <Button asChild size="lg" className="w-full">
               <Link href="/events/new">약속 만들기</Link>
             </Button>
-            <Button asChild variant="outline" className="w-full" size="lg">
-              <Link href="/login">생성자 로그인</Link>
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button asChild variant="outline" className="w-full" size="lg">
+                <Link href="/login">로그인</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full" size="lg">
+                <Link href="/register">회원가입</Link>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

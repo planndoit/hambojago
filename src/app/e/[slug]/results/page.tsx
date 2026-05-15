@@ -7,6 +7,7 @@ import { ResultsCalendarInteractive } from "@/components/results-calendar-intera
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buildEventShareMetadata } from "@/config/site-share";
 import { formatKoreanDate } from "@/lib/date";
 import { getEventResults } from "@/lib/events";
 import { buildResultCalendarMonths, followupVoteDatesByDateAsc } from "@/lib/result-calendar";
@@ -14,6 +15,19 @@ import { formatSeoulDateTimeLabel } from "@/lib/seoul-time";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const { event } = await getEventResults(slug);
+
+  return {
+    ...buildEventShareMetadata(`${event.title} · 결과`, event.description)
+  };
+}
 
 export default async function ResultsPage({
   params

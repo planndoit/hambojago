@@ -1,12 +1,13 @@
 "use client";
 
 import type { ChangeEvent } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
 
 import {
+  changeCreatorPasswordState,
   clearCreatorAvatarAction,
-  updateCreatorProfileAction
+  updateCreatorProfileState
 } from "@/app/actions";
 import { ParticipantAvatar } from "@/components/participant-avatar";
 import { FormStatusOverlay } from "@/components/form-status-overlay";
@@ -30,8 +31,17 @@ export function CreatorProfileForm({
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl);
   const [avatarError, setAvatarError] = useState("");
   const [avatarPending, startAvatarTransition] = useTransition();
+  const [profileState, profileAction, profilePending] = useActionState(updateCreatorProfileState, null);
+  const [pwdState, pwdAction, pwdPending] = useActionState(changeCreatorPasswordState, null);
+  const pwdFormRef = useRef<HTMLFormElement>(null);
 
   const labelName = initialDisplayName.trim() ? initialDisplayName.trim() : username;
+
+  useEffect(() => {
+    if (pwdState?.ok) {
+      pwdFormRef.current?.reset();
+    }
+  }, [pwdState?.ok]);
 
   async function onAvatarFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -64,7 +74,7 @@ export function CreatorProfileForm({
 
   return (
     <div className="relative grid gap-5">
-      <PendingOverlay show={avatarPending} />
+      <PendingOverlay show={avatarPending || profilePending || pwdPending} />
       <div className="hb-calendar-surface flex flex-col items-center gap-3 p-6">
         <ParticipantAvatar avatarUrl={avatarUrl} name={labelName} size={96} />
         <Label className="grid w-full max-w-xs gap-2 text-center">
@@ -84,23 +94,66 @@ export function CreatorProfileForm({
         ) : null}
       </div>
 
-      <form action={updateCreatorProfileAction} className="relative grid gap-4">
-        <FormStatusOverlay />
+      <form action={profileAction} className="relative grid gap-4">
+        <div className="grid gap-2">
+          <Label>
+            <span>아이디</span>
+            <Input className="bg-stone-50" readOnly value={username} />
+          </Label>
+          <p className="text-xs text-stone-500">아이디는 변경할 수 없습니다.</p>
+        </div>
         <Label>
-          <span>표시 이름</span>
+          <span>이름</span>
           <Input
+            autoComplete="name"
             defaultValue={initialDisplayName}
+            maxLength={60}
+            minLength={1}
             name="displayName"
-            placeholder={username}
+            placeholder="이름을 입력해 주세요"
+            required
           />
         </Label>
-        <p className="text-xs text-stone-500">
-          비워 두면 약속 목록 등에서는 아이디({username})로 표시됩니다.
-        </p>
+        <p className="text-xs text-stone-500">이름은 필수이며, 약속·결과 화면 등에 표시됩니다.</p>
+        {profileState?.error ? (
+          <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">{profileState.error}</p>
+        ) : null}
+        {profileState?.ok ? (
+          <p className="rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">저장되었습니다.</p>
+        ) : null}
         <Button className="w-full" size="lg" type="submit">
-          이름 저장
+          저장
         </Button>
       </form>
+
+      <div className="border-t border-stone-200 pt-5">
+        <h3 className="mb-3 text-sm font-bold text-stone-800">비밀번호 변경</h3>
+        <form action={pwdAction} className="relative grid gap-4" ref={pwdFormRef}>
+          <Label>
+            <span>현재 비밀번호</span>
+            <Input autoComplete="current-password" name="currentPassword" required type="password" />
+          </Label>
+          <Label>
+            <span>새 비밀번호 (8자 이상)</span>
+            <Input autoComplete="new-password" minLength={8} name="newPassword" required type="password" />
+          </Label>
+          <Label>
+            <span>새 비밀번호 확인</span>
+            <Input autoComplete="new-password" minLength={8} name="newPasswordConfirm" required type="password" />
+          </Label>
+          {pwdState?.error ? (
+            <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">{pwdState.error}</p>
+          ) : null}
+          {pwdState?.ok ? (
+            <p className="rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
+              비밀번호가 변경되었습니다.
+            </p>
+          ) : null}
+          <Button className="w-full" size="lg" type="submit" variant="secondary">
+            비밀번호 변경
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

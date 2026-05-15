@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isValidPassword, isValidUsername } from "@/lib/auth";
+import { isValidDisplayName, isValidPassword, isValidUsername } from "@/lib/auth";
 import { createParticipantAccountSession } from "@/lib/participant-auth";
 import { hashPassword, verifyPassword } from "@/lib/security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -9,6 +9,8 @@ type AuthRequest = {
   mode?: unknown;
   username?: unknown;
   password?: unknown;
+  passwordConfirm?: unknown;
+  displayName?: unknown;
 };
 
 export async function POST(request: Request) {
@@ -16,6 +18,8 @@ export async function POST(request: Request) {
   const mode = body.mode === "signup" ? "signup" : "login";
   const username = typeof body.username === "string" ? body.username.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
+  const passwordConfirm = typeof body.passwordConfirm === "string" ? body.passwordConfirm : "";
+  const displayNameRaw = typeof body.displayName === "string" ? body.displayName.trim() : "";
 
   if (!isValidUsername(username)) {
     return NextResponse.json(
@@ -34,11 +38,28 @@ export async function POST(request: Request) {
   const supabase = createSupabaseAdminClient();
 
   if (mode === "signup") {
+    if (password !== passwordConfirm) {
+      return NextResponse.json(
+        { message: "비밀번호 확인이 일치하지 않습니다." },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidDisplayName(displayNameRaw)) {
+      return NextResponse.json(
+        { message: "이름은 1자 이상 60자 이하로 입력해 주세요." },
+        { status: 400 }
+      );
+    }
+
+    const displayName = displayNameRaw.slice(0, 60);
+
     const { data: account, error } = await supabase
       .from("participant_accounts")
       .insert({
         username,
-        password_hash: hashPassword(password)
+        password_hash: hashPassword(password),
+        display_name: displayName
       })
       .select("id")
       .single();

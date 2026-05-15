@@ -7,6 +7,7 @@ import { ParticipantVoteBanner } from "@/components/participant-vote-banner";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buildEventShareMetadata } from "@/config/site-share";
 import { isVotingClosed } from "@/lib/event-voting";
 import { getEventWithDates, participantHasAvailabilityForEvent } from "@/lib/events";
 import { getCurrentParticipantAccount } from "@/lib/participant-auth";
@@ -22,10 +23,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const event = await getEventWithDates(slug);
 
-  return {
-    title: `${event.title} - 함보자고`,
-    description: event.description ?? "되는 날만 눌러주세요. 가장 많이 겹치는 날짜를 바로 보여드려요."
-  };
+  return buildEventShareMetadata(event.title, event.description);
 }
 
 export default async function EventPage({

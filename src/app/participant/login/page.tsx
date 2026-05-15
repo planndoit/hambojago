@@ -1,5 +1,5 @@
 import { AppTopBar } from "@/components/app-top-bar";
-import { AuthForm } from "@/components/auth-form";
+import { LoginForm } from "@/components/login-form";
 import { MobileShell } from "@/components/mobile-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -26,7 +26,12 @@ export default async function ParticipantLoginPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AuthForm authApiPath="/api/participant-auth" redirectPath={redirectPath} />
+          <LoginForm
+            authApiPath="/api/participant-auth"
+            redirectPath={redirectPath}
+            registerHref={`/participant/register?next=${encodeURIComponent(redirectPath)}`}
+            registerLabel="참여자 회원가입"
+          />
         </CardContent>
       </Card>
     </MobileShell>
